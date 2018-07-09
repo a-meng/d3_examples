@@ -46,6 +46,7 @@ var color = d3.scaleOrdinal()
     .domain(["Lorem ipsum", "dolor sit", "amet", "consectetur", "adipisicing", "elit", "sed", "do", "eiusmod", "tempor", "incididunt"])
     .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
 
+//模拟数据更新
 function randomData() {
     var labels = color.domain();
     return labels.map(function (label) {
@@ -68,30 +69,39 @@ function change(data) {
         //key 参数 描述data的索引
         .data(pie(data));
 
-    //扇形
+    /*更新操作*/
+    //这个是更新动画
+    slice.transition()
+        .duration(1000)
+        .attrTween("d", function (d) {
+            console.info('更新')
+            let {startAngle, endAngle} = d;
+            let _interpolate = d3.interpolate(
+                this._angle,
+                {startAngle, endAngle}
+            );
+            this._angle = {startAngle, endAngle};
+            return function (t) {
+                return arc(_interpolate(t));
+            };
+        });
+    //删除多余
+    slice.exit().remove();
+
+    //插入新的
     slice.enter()
         .insert("path")
         .style("fill", function (d) {
             return color(d.data.label);
         })
         .attr("class", "slice")
+        //动画
         .transition()
         .duration(1000)
         .attrTween("d", function (d) {
+            console.info('添加');
             let {startAngle, endAngle} = d;
-            let _interpolate = d3.interpolate(
-                {startAngle: 0, endAngle: 0},
-                {startAngle, endAngle}
-            );
-
-            return function (t) {
-                return arc(_interpolate(t));
-            };
-        });
-    slice.transition()
-        .duration(1000)
-        .attrTween("d", function (d) {
-            let {startAngle, endAngle} = d;
+            this._angle = {startAngle, endAngle};//留给更新的时候用
             let _interpolate = d3.interpolate(
                 {startAngle: 0, endAngle: 0},
                 {startAngle, endAngle}

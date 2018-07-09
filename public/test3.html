@@ -13,7 +13,7 @@
         width: 100%;
         height: 100%;
         display: block;
-        border:1px solid gray;
+        border: 1px solid gray;
     }
 
     path.slice {
@@ -29,6 +29,16 @@
 
 </style>
 <body>
-<button class="randomize">randomize</button>
+<pre>
+
+
+   1. d3的数据更新方式： selection.enter() selection.exit() ##分别是获取 enter selection exit selection 依此区分添加，删除
+      修改的话selection直接操作元素
+   2. 动画：  transition()->duration(配置时长)-> attrTween(过渡函数生成器 ->interpolate(插值器))
+
+
+</pre>
+<button class="randomize">更新数据</button>
+
 </body>
 </html>
