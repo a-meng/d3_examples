@@ -2,25 +2,48 @@
     <svg viewBox="0 0 100 100">
         <defs>
             <filter :id="'pie_f'+uid" x="-50" y="-50" width="150" height="150">
-                <feGaussianBlur result="blur" in="SourceAlpha" stdDeviation="5"/>
-                <feBlend in="SourceGraphic" out="blur"/>
+                <feGaussianBlur result="blur" in="SourceAlpha" stdDeviation="7"></feGaussianBlur>
+                <feBlend in="SourceGraphic" out="blur"></feBlend>
             </filter>
         </defs>
-        <g transform="translate(50,50)" @mouseout="hover=''">
+        <g transform="translate(50,50)">
             <path v-for="s in sector"
+                  @mouseover="onMouseover(s)"
                   :fill="s.color"
-                  @mouseover="hover=s.data.name"
-                  :filter="s.filter"
-                  :d="s.d"/>
+                  :d="vArc(s)"></path>
+
+            <path v-if="hover"
+                  :fill="hover.color"
+                  :filter="`url(#pie_f${uid})`"
+                  @mouseout="hover=null"
+                  :d="vArc(hover)"></path>
         </g>
     </svg>
 </template>
 
 <script>
-    import {pie, arc} from 'd3'
+    import * as d3 from 'd3'
+
+    window.d3 = d3;
+    import {pie, arc, timer} from 'd3'
+
 
     let vPie = pie().value(d => d.value).sort(null);
     let vArc = arc().innerRadius(10);
+
+    //一个动画工具方法
+    function anim(duration, cb) {
+        let d = duration * 1000;
+        let t = timer(function (elapsed) {
+            let progress = elapsed / d;
+            cb(progress);
+            if (progress >= 1) {
+                t.stop();
+            }
+        })
+    }
+
+
     export default {
         //[{name,value}]
         props: ['data'],
@@ -31,35 +54,43 @@
                 uid: Date.now() + '' + parseInt(Math.random() * 1000),
                 // 一组默认颜色
                 colors: ["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"],
-                hover: ''
+
+                //高亮结点
+                hover: null,
             }
         },
         computed: {
-            //绘制扇形路径
+            //绘制图形基本数据
             sector() {
-                let {data, colors, hover, uid} = this;
-
-                let vdata = vPie(data).map((e, i) => {
-
-                    if (e.data.name === hover) {
-                        vArc.outerRadius(45);
-                        e.filter = `url(#pie_f${uid})`;
-                    } else {
-                        vArc.outerRadius(42);
-                        e.filter = 'none';
+                let {data, colors, hover} = this;
+                return vPie(data).map((e, i) => {
+                    return {
+                        name: e.data.name,
+                        outerRadius: 42,
+                        color: colors[i],
+                        startAngle: e.startAngle,
+                        endAngle: e.endAngle
                     }
-                    e.d = vArc(e);
-                    e.color = colors[i];
-                    return e;
                 });
-                //应为svg没有zindex 所以要把带阴影的放最后面一个元素
-                vdata.sort((a, b) => {
-                    if (a.data.name === hover) return 1;
-                });
-
-                return vdata;
             }
         },
-        methods: {}
+        watch: {
+            hover(val) {
+                if (val) {
+                    let W = val.outerRadius;
+                    let w = val.outerRadius * .08;
+                    anim(.3, function (t) {
+                        val.outerRadius = W + w * d3.easeExpOut(t);
+                    });
+                }
+            }
+        },
+        methods: {
+            vArc,
+            onMouseover(s) {
+                this.hover = JSON.parse(JSON.stringify(s));
+
+            }
+        }
     }
 </script>
